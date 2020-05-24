@@ -42,7 +42,7 @@ namespace MaxiLoterias.Controllers
         }
 
         [HttpGet]
-        [Route("loterias/ultimosdias/{dias}/desde/{fecha}")]
+        [Route("loterias/ultimosdias/{dias}/hasta/{fecha}")]
         [Route("loterias/ultimosdias/{dias}")]
         public async Task<IActionResult> UltimosDias(int? dias, string fecha)
         {
