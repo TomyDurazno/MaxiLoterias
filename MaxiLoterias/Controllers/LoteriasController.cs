@@ -42,15 +42,19 @@ namespace MaxiLoterias.Controllers
         }
 
         [HttpGet]
+        [Route("loterias/ultimosdias/{dias}/desde/{fecha}")]
         [Route("loterias/ultimosdias/{dias}")]
-        public async Task<IActionResult> UltimosDias(int? dias)
+        public async Task<IActionResult> UltimosDias(int? dias, string fecha)
         {
             if(dias.HasValue)
             {
-                var now = DateTime.Now;
+                var date = DateTime.Now;
+
+                if (DateTime.TryParse(fecha, out DateTime d))
+                    date = d;
 
                 var tasks = Enumerable.Range(0, dias.Value)
-                                      .Select(n => loteriaServicio.GoGet(now.AddDays(- n)));
+                                      .Select(n => loteriaServicio.GoGet(date.AddDays(- n)));
 
                 var results = await Task.WhenAll(tasks);
 
