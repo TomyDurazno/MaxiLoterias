@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AngleSharp;
-using MaxiLoterias.Core;
-using MaxiLoterias.Core.Extensions;
-using MaxiLoterias.Core.Models;
 using MaxiLoterias.Core.Servicios;
 using Microsoft.AspNetCore.Mvc;
 
@@ -47,6 +42,31 @@ namespace MaxiLoterias.Controllers
         }
 
         [HttpGet]
+        [Route("loterias/ultimosdias/{dias}")]
+        public async Task<IActionResult> UltimosDias(int? dias)
+        {
+            if(dias.HasValue)
+            {
+                var now = DateTime.Now;
+
+                var tasks = Enumerable.Range(0, dias.Value)
+                                      .Select(n => loteriaServicio.GoGet(now.AddDays(- n)));
+
+                var results = await Task.WhenAll(tasks);
+
+                return Ok(results);
+            }
+            else
+            {
+                return NotFound("Dia no especificado");
+            }
+
+        }
+
+
+        #region Raws
+
+        [HttpGet]
         [Route("loterias/raw/hoy")]
         public async Task<IActionResult> HoyRaw()
         {
@@ -70,5 +90,7 @@ namespace MaxiLoterias.Controllers
                 return NotFound("La fecha es errónea o no existen campos para la misma");
             }
         }
+
+        #endregion
     }
 }

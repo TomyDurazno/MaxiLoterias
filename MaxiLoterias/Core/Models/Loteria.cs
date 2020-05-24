@@ -28,8 +28,18 @@ namespace MaxiLoterias.Core.Models
         public string Nombre { get => _Estado != LoteriaState.Error ? _Nombre?.FixS() : null; }
         public string SubCodigo { get => _SubCodigo?.FixS(); }
 
-        public string Estado { get => _Estado != LoteriaState.Jugado ? _Estado.GetDescription() : null; }
         public List<NumeroLoteria> Numeros { get; set; }
+
+        public string Estado 
+        { 
+            get 
+            {
+                if (Numeros?.Any() == true)
+                    return null;
+
+                return _Estado != LoteriaState.Jugado ? _Estado.GetDescription() : null; 
+            } 
+        }
 
         public Loteria(List<string> RawValue)
         {

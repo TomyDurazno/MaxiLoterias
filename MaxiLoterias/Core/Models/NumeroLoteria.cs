@@ -12,6 +12,11 @@ namespace MaxiLoterias.Core.Models
         public int Puesto { get; set; }
         public int? Numero { get; set; }
 
+        public NumeroLoteria()
+        {
+
+        }
+
         public NumeroLoteria(string[] RawValue)
         {
             _RawValue = RawValue;
