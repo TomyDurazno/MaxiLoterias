@@ -25,6 +25,14 @@ namespace MaxiLoterias.Core.Models
         public bool Construct;
         public LoteriaState _Estado;
 
+        public string Nombre { get => _Estado != LoteriaState.Error ? _Nombre : null; }
+        public string SubCodigo { get => _SubCodigo; }
+
+        public string Estado
+        {
+            get => _Estado.GetDescription();
+        }
+
         public List<NumeroLoteria> Numeros { get; set; }
 
         public Loteria(LoteriaState estado)
@@ -37,20 +45,6 @@ namespace MaxiLoterias.Core.Models
             _Nombre = nombre;
             _SubCodigo = subCodigo;
             Construct = true;
-        }
-
-        public string Nombre { get => _Estado != LoteriaState.Error ? _Nombre : null; }
-        public string SubCodigo { get => _SubCodigo; }
-
-        public string Estado 
-        { 
-            get 
-            {
-                if (Numeros?.Any() == true)
-                    return null;
-
-                return _Estado != LoteriaState.Jugado ? _Estado.GetDescription() : null; 
-            } 
         }
 
         public LoteriaDTO ToDTO() => new LoteriaDTO(Nombre, SubCodigo, Estado, Numeros);
