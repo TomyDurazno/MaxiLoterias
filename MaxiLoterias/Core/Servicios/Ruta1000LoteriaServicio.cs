@@ -70,16 +70,14 @@ namespace MaxiLoterias.Core.Servicios
                           .Select(g => func(g));
         }
 
-        /*
-        Esta es la función que parsea el string del input, fijarse que hay casos en los que no está pudiendo parsear bien.  
-        */
-        IEnumerable<string> ParseInput(string input)
-        {
-            return input.SplitBy("  ").Where(s => !string.IsNullOrWhiteSpace(s));
-        }
-
         Bloque MakeBloque(IGrouping<string, string> g)
         {
+            //Esta es la función que parsea el string del input, fijarse que hay casos en los que no está pudiendo parsear bien.  
+            IEnumerable<string> ParseInput(string input)
+            {
+                return input.SplitBy("  ").Where(s => !string.IsNullOrWhiteSpace(s));
+            }
+
             var arr = g.Select(s => ParseInput(s)).ToArray().Select(rv => rv.ToList());
 
             int count = 0;
