@@ -210,7 +210,7 @@ namespace MaxiLoterias.Core.Servicios
                 }
                 else
                 {
-                    return new Loteria(LoteriaState.Jugado, makeNombre(), _subCodigo);
+                    return new Loteria(LoteriaState.PendienteDeJuego, makeNombre(), _subCodigo);
                 }                
             }
             catch

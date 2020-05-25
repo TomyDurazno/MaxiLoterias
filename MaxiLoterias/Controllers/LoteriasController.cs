@@ -23,7 +23,7 @@ namespace MaxiLoterias.Controllers
             if(DateTime.TryParse(fecha, out DateTime date))
             {
                 var bloques = await loteriaServicio.GoGet(date);
-
+                
                 return Ok(ExecuteCommand(bloques, command));
             }
             else
