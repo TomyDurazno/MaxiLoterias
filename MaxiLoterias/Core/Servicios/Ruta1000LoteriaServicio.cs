@@ -10,18 +10,52 @@ namespace MaxiLoterias.Core.Servicios
 {
     public class Ruta1000LoteriaServicio : ILoteriaServicio
     {
+        #region Fields
+
         ITokenizerService<string> tokenizerService;
+
+        #endregion
+
+        #region Constructor
 
         public Ruta1000LoteriaServicio(ITokenizerService<string> _tokenizerService)
         {
             tokenizerService = _tokenizerService;
         }
 
+        #endregion
+
         #region Private Properties
 
         string MakeUrl (string dateAsString) => $"https://m.ruta1000.com.ar/index2008.php?FechaAlMinuto={dateAsString}#Sorteos";
 
         string DateToString(DateTime f) => $"{f.Year}_{f.Month.AddZeroFront()}_{f.Day.AddZeroFront()}";
+
+        Dictionary<string, string> Nombres = new Dictionary<string, string>()
+        {
+            { "QUINIELADE LA CIUDAD(Ex-Nacional)PRIMERA", "QUINIELA DE LA CIUDAD (Ex-Nacional) PRIMERA" },
+            { "QUINIELADE LA CIUDAD(Ex-Nacional)MATUTINA", "QUINIELA DE LA CIUDAD (Ex-Nacional) MATUTINA" },
+            { "QUINIELADE LA CIUDAD(Ex-Nacional)VESPERTINA", "QUINIELA DE LA CIUDAD (Ex-Nacional) VESPERTINA" },
+            { "QUINIELADE LA CIUDAD(Ex-Nacional)NOCTURNA", "QUINIELA DE LA CIUDAD (Ex-Nacional) NOCTURNA" },
+            { "QUINIELABUENOS AIRESPRIMERA", "QUINIELA BUENOS AIRES PRIMERA" },
+            { "QUINIELABUENOS AIRESMATUTINA", "QUINIELA BUENOS AIRES MATUTINA" },
+            { "QUINIELABUENOS AIRESVESPERTINA", "QUINIELA BUENOS AIRES VESPERTINA" },
+            { "QUINIELABUENOS AIRESNOCTURNA", "QUINIELA BUENOS AIRES NOCTURNA" },
+            { "QUINIELACORDOBAPRIMERA", "QUINIELA CORDOBA PRIMERA" },
+            { "QUINIELACORDOBAMATUTINA", "QUINIELA CORDOBA MATUTINA" },
+            { "QUINIELACORDOBAVESPERTINA", "QUINIELA CORDOBA VESPERTINA" },
+            { "QUINIELACORDOBANOCTURNA", "QUINIELA CORDOBA NOCTURNA" },
+            { "QUINIELASANTA FEPRIMERA", "QUINIELA SANTA FE PRIMERA" },
+            { "QUINIELASANTA FEMATUTINA", "QUINIELA SANTA FE MATUTINA" },
+            { "QUINIELASANTA FEVESPERTINA", "QUINIELA SANTA FE VESPERTINA" },
+            { "QUINIELASANTA FENOCTURNA", "QUINIELA SANTA FE NOCTURNA" },
+            { "QUINIELAENTRE RIOSPRIMERA", "QUINIELA ENTRE RIOS PRIMERA" },
+            { "QUINIELAENTRE RIOSMATUTINA", "QUINIELA ENTRE RIOS MATUTINA" },
+            { "QUINIELAENTRE RIOSVESPERTINA", "QUINIELA ENTRE RIOS VESPERTINA" },
+            { "QUINIELAENTRE RIOSNOCTURNA", "QUINIELA ENTRE RIOS NOCTURNA" },
+            { "QUINIELAMONTEVIDEOMATUTINA", "QUINIELA MONTEVIDEO MATUTINA" },
+            { "QUINIELAMONTEVIDEONOCTURNA", "QUINIELA MONTEVIDEO NOCTURNA" },
+        };
 
         #endregion
 
@@ -31,12 +65,11 @@ namespace MaxiLoterias.Core.Servicios
         {
             var config = Configuration.Default.WithDefaultLoader();
             var address = MakeUrl(DateToString(fecha));
-            var context = BrowsingContext.New(config);
-            var document = await context.OpenAsync(address);
-            var cellSelector = "td[valign|='upper']";
-            var cells = document.QuerySelectorAll(cellSelector);
+
+            var document = await BrowsingContext.New(config).OpenAsync(address);
             
-            return cells.Select(m => m.TextContent);
+            return document.QuerySelectorAll("td[valign|='upper']")
+                           .Select(m => m.TextContent);
         }
 
         public async Task<IEnumerable<IEnumerable<string>>> GetRawInputs(DateTime fecha)
@@ -44,17 +77,15 @@ namespace MaxiLoterias.Core.Servicios
             return GetRawGroups(await GetRaw(fecha), g => g.Select(s => s));
         }
 
-        public async Task<LoteriaDTO> GoGet(DateTime fecha)
+        public async Task<LoteriaResult> GoGet(DateTime fecha)
         {
             var bloques = GetRawGroups(await GetRaw(fecha), MakeBloque);
 
-            var dto = new LoteriaDTO()
+            return new LoteriaResult()
             {
                 Fecha = fecha.ToShortDateString(),
                 Loterias = bloques.SelectMany(b => b.Loterias).ToList()
-            };
-
-            return dto;            
+            };         
         }
 
         #endregion
@@ -140,10 +171,7 @@ namespace MaxiLoterias.Core.Servicios
             {
                 var fix = rawValue.ElementAt(0)?.FixS();
 
-                if (Nombres.TryGetValue(fix, out string value))
-                    return value;
-                else
-                    return fix;
+                return Nombres.TryGetValue(fix, out string value) ? value : fix;
             }
 
             string makeSubCodigo()
@@ -195,32 +223,6 @@ namespace MaxiLoterias.Core.Servicios
                 return new Loteria(LoteriaState.Error);
             }
         }
-
-        Dictionary<string, string> Nombres = new Dictionary<string, string>()
-    {
-        { "QUINIELADE LA CIUDAD(Ex-Nacional)PRIMERA", "QUINIELA DE LA CIUDAD (Ex-Nacional) PRIMERA" },
-        { "QUINIELADE LA CIUDAD(Ex-Nacional)MATUTINA", "QUINIELA DE LA CIUDAD (Ex-Nacional) MATUTINA" },
-        { "QUINIELADE LA CIUDAD(Ex-Nacional)VESPERTINA", "QUINIELA DE LA CIUDAD (Ex-Nacional) VESPERTINA" },
-        { "QUINIELADE LA CIUDAD(Ex-Nacional)NOCTURNA", "QUINIELA DE LA CIUDAD (Ex-Nacional) NOCTURNA" },
-        { "QUINIELABUENOS AIRESPRIMERA", "QUINIELA BUENOS AIRES PRIMERA" },
-        { "QUINIELABUENOS AIRESMATUTINA", "QUINIELA BUENOS AIRES MATUTINA" },
-        { "QUINIELABUENOS AIRESVESPERTINA", "QUINIELA BUENOS AIRES VESPERTINA" },
-        { "QUINIELABUENOS AIRESNOCTURNA", "QUINIELA BUENOS AIRES NOCTURNA" },
-        { "QUINIELACORDOBAPRIMERA", "QUINIELA CORDOBA PRIMERA" },
-        { "QUINIELACORDOBAMATUTINA", "QUINIELA CORDOBA MATUTINA" },
-        { "QUINIELACORDOBAVESPERTINA", "QUINIELA CORDOBA VESPERTINA" },
-        { "QUINIELACORDOBANOCTURNA", "QUINIELA CORDOBA NOCTURNA" },
-        { "QUINIELASANTA FEPRIMERA", "QUINIELA SANTA FE PRIMERA" },
-        { "QUINIELASANTA FEMATUTINA", "QUINIELA SANTA FE MATUTINA" },
-        { "QUINIELASANTA FEVESPERTINA", "QUINIELA SANTA FE VESPERTINA" },
-        { "QUINIELASANTA FENOCTURNA", "QUINIELA SANTA FE NOCTURNA" },
-        { "QUINIELAENTRE RIOSPRIMERA", "QUINIELA ENTRE RIOS PRIMERA" },
-        { "QUINIELAENTRE RIOSMATUTINA", "QUINIELA ENTRE RIOS MATUTINA" },
-        { "QUINIELAENTRE RIOSVESPERTINA", "QUINIELA ENTRE RIOS VESPERTINA" },
-        { "QUINIELAENTRE RIOSNOCTURNA", "QUINIELA ENTRE RIOS NOCTURNA" },
-        { "QUINIELAMONTEVIDEOMATUTINA", "QUINIELA MONTEVIDEO MATUTINA" },
-        { "QUINIELAMONTEVIDEONOCTURNA", "QUINIELA MONTEVIDEO NOCTURNA" },
-    };
 
         #endregion
     }

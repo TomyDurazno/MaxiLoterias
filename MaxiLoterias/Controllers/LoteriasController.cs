@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using MaxiLoterias.Core.Models;
 using MaxiLoterias.Core.Servicios;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,16 +16,15 @@ namespace MaxiLoterias.Controllers
             loteriaServicio = _loteriaServicio;
         }
 
-
         [HttpGet]
-        [Route("loterias/fecha/{fecha}")]
-        public async Task<IActionResult> PorFecha(string fecha)
+        [Route("loterias/fecha/{fecha}/{command?}")]
+        public async Task<IActionResult> PorFecha(string fecha, string command = null)
         {            
             if(DateTime.TryParse(fecha, out DateTime date))
             {
                 var bloques = await loteriaServicio.GoGet(date);
 
-                return Ok(bloques);
+                return Ok(ExecuteCommand(bloques, command));
             }
             else
             {
@@ -33,18 +33,18 @@ namespace MaxiLoterias.Controllers
         }
 
         [HttpGet]
-        [Route("loterias/hoy")]
-        public async Task<IActionResult> Hoy()
+        [Route("loterias/hoy/{command?}")]
+        public async Task<IActionResult> Hoy(string command = null)
         {
             var bloques = await loteriaServicio.GoGet(DateTime.Now);
 
-            return Ok(bloques);
+            return Ok(ExecuteCommand(bloques, command));
         }
 
         [HttpGet]
-        [Route("loterias/ultimosdias/{dias}/hasta/{fecha}")]
-        [Route("loterias/ultimosdias/{dias}")]
-        public async Task<IActionResult> UltimosDias(int? dias, string fecha)
+        [Route("loterias/ultimosdias/{dias}/{command?}")]
+        [Route("loterias/ultimosdias/{dias}/hasta/{fecha}/{command?}")]
+        public async Task<IActionResult> UltimosDias(int? dias, string fecha, string command = null)
         {
             if(dias.HasValue)
             {
@@ -58,15 +58,21 @@ namespace MaxiLoterias.Controllers
 
                 var results = await Task.WhenAll(tasks);
 
-                return Ok(results);
+                return Ok(results.Select(l => ExecuteCommand(l, command)));
             }
             else
             {
                 return NotFound("Dia no especificado");
             }
-
         }
 
+        object ExecuteCommand(LoteriaResult result, string command)
+        {
+            if (command == "pretty")
+                return result; //Custom JSON Converter
+            else
+                return result.ToDTO();
+        }
 
         #region Raws
 
@@ -85,9 +91,9 @@ namespace MaxiLoterias.Controllers
         {
             if (DateTime.TryParse(fecha, out DateTime date))
             {
-                var bloques = await loteriaServicio.GetRawInputs(DateTime.Now);
+                var inputs = await loteriaServicio.GetRawInputs(DateTime.Now);
 
-                return Ok(bloques);
+                return Ok(inputs);
             }
             else
             {

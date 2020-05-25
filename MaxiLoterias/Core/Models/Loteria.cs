@@ -52,5 +52,24 @@ namespace MaxiLoterias.Core.Models
                 return _Estado != LoteriaState.Jugado ? _Estado.GetDescription() : null; 
             } 
         }
+
+        public LoteriaDTO ToDTO() => new LoteriaDTO(Nombre, SubCodigo, Estado, Numeros);
+    }   
+
+    public class LoteriaDTO
+    {
+        public string Nombre { get; set; }
+        public string SubCodigo { get; set; }
+        public string Estado { get; set; }
+
+        public List<NumeroLoteriaDTO> Numeros { get; set; }
+
+        public LoteriaDTO(string nombre, string subCodigo, string estado, List<NumeroLoteria> numeros)
+        {
+            Nombre = nombre;
+            SubCodigo = subCodigo;
+            Estado = estado;
+            Numeros = numeros?.Select(n => n?.ToDTO()).ToList();
+        }
     }
 }

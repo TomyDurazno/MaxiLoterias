@@ -12,7 +12,7 @@ namespace MaxiLoterias.Core.Models
     [JsonConverter(typeof(NumeroLoteriaConverter))]
     public class NumeroLoteria
     {
-        string[] _RawValue;
+        string [] _RawValue;
         int Puesto { get; set; }
         int? Numero { get; set; }
 
@@ -48,6 +48,20 @@ namespace MaxiLoterias.Core.Models
             _RawValue = RawValue;
             Puesto = _RawValue[0].Replace("º", string.Empty).Pipe(Convert.ToInt32);
             Numero = _RawValue[1].Pipe(n => int.TryParse(n, out var val) ? val : (int?)null);
+        }
+
+        public NumeroLoteriaDTO ToDTO() => new NumeroLoteriaDTO(Puesto, Numero);
+    }
+
+    public class NumeroLoteriaDTO
+    {
+        public int Puesto { get; set; }
+        public int? Numero { get; set; }
+
+        public NumeroLoteriaDTO(int puesto, int? numero)
+        {
+            Puesto = puesto;
+            Numero = numero;
         }
     }
 
