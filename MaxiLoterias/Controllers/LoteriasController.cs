@@ -66,38 +66,17 @@ namespace MaxiLoterias.Controllers
             }
         }
 
+        #region ExecuteCommand
+
         object ExecuteCommand(LoteriaResult result, string command)
         {
-            if (command == "pretty")
-                return result; //Custom JSON Converter
-            else
-                return result.ToDTO();
-        }
-
-        #region Raws
-
-        [HttpGet]
-        [Route("loterias/raw/hoy")]
-        public async Task<IActionResult> HoyRaw()
-        {
-            var obj = await loteriaServicio.GetRawInputs(DateTime.Now);
-
-            return Ok(obj);
-        }
-
-        [HttpGet]
-        [Route("loterias/raw/fecha/{fecha}")]
-        public async Task<IActionResult> PorFechaRaw(string fecha)
-        {
-            if (DateTime.TryParse(fecha, out DateTime date))
+            switch (command)
             {
-                var inputs = await loteriaServicio.GetRawInputs(DateTime.Now);
+                case "pretty":
+                    return result; //Custom JSON Converter
 
-                return Ok(inputs);
-            }
-            else
-            {
-                return NotFound("La fecha es errónea o no existen campos para la misma");
+                default:
+                    return result.ToDTO();
             }
         }
 

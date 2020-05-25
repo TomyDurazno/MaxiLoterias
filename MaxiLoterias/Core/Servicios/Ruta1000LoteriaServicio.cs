@@ -61,22 +61,6 @@ namespace MaxiLoterias.Core.Servicios
 
         #region Interface Implementation
 
-        public async Task<IEnumerable<string>> GetRaw(DateTime fecha)
-        {
-            var config = Configuration.Default.WithDefaultLoader();
-            var address = MakeUrl(DateToString(fecha));
-
-            var document = await BrowsingContext.New(config).OpenAsync(address);
-            
-            return document.QuerySelectorAll("td[valign|='upper']")
-                           .Select(m => m.TextContent);
-        }
-
-        public async Task<IEnumerable<IEnumerable<string>>> GetRawInputs(DateTime fecha)
-        {
-            return GetRawGroups(await GetRaw(fecha), g => g.Select(s => s));
-        }
-
         public async Task<LoteriaResult> GoGet(DateTime fecha)
         {
             var bloques = GetRawGroups(await GetRaw(fecha), MakeBloque);
@@ -91,6 +75,17 @@ namespace MaxiLoterias.Core.Servicios
         #endregion
 
         #region Private Methods
+
+        async Task<IEnumerable<string>> GetRaw(DateTime fecha)
+        {
+            var config = Configuration.Default.WithDefaultLoader();
+            var address = MakeUrl(DateToString(fecha));
+
+            var document = await BrowsingContext.New(config).OpenAsync(address);
+
+            return document.QuerySelectorAll("td[valign|='upper']")
+                           .Select(m => m.TextContent);
+        }
 
         IEnumerable<T> GetRawGroups<T>(IEnumerable<string> content, Func<IGrouping<string, string>, T> func)
         {
