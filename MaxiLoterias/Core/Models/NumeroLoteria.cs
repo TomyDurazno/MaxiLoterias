@@ -64,8 +64,8 @@ namespace MaxiLoterias.Core.Models
             NumeroLoteria numLot,
             JsonSerializerOptions options) {
 
-            writer.WriteStartObject();
-            writer.WriteStringValue(numLot.Name() + "º");
+            writer.WriteStartObject();            
+            writer.WritePropertyName(numLot.Name() + "º");
             writer.WriteNumberValue(numLot.Value());
             writer.WriteEndObject();
         }

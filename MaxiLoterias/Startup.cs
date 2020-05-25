@@ -34,7 +34,9 @@ namespace MaxiLoterias
                 options.JsonSerializerOptions.IgnoreNullValues = true;
             });
 
-            services.AddScoped<ILoteriaServicio>(s => new Ruta1000LoteriaServicio());
+            services.AddScoped<ITokenizerService<string>>(s => new TokenizerService());
+
+            services.AddScoped<ILoteriaServicio>(s => new Ruta1000LoteriaServicio(s.GetService<ITokenizerService<string>>()));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

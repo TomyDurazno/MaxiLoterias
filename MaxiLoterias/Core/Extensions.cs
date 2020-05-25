@@ -150,7 +150,7 @@ namespace MaxiLoterias.Core.Extensions
         public static string FixS(this string s)
             => s.Replace("\r\n", "\n")
                 .Replace('\r', '\n')
-                .Replace('\n', ' ')
+                .Replace("\n", "  ")
                 .Trim();
 
         public static string AddZeroFront(this int n)
