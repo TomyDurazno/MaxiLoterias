@@ -73,7 +73,7 @@ namespace MaxiLoterias.Core.Models
 
                 var numeros = groups.Select(g => new NumeroLoteria(g.ToArray())).ToList();
 
-                if (numeros.All(n => n.Numero.HasValue))
+                if (numeros.All(n => n.HasValue()))
                 {
                     Numeros = numeros;
                     _Estado = LoteriaState.Jugado;

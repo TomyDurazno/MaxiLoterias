@@ -9,7 +9,7 @@ namespace MaxiLoterias.Core.Servicios
     public interface ILoteriaServicio
     {
         public Task<LoteriaDTO> GoGet(DateTime fecha);
-        public Task<IEnumerable<T>> GetRaw<T>(DateTime fecha, Func<IGrouping<string, string>, T> func);
+        public Task<IEnumerable<string>> GetRaw(DateTime fecha);
         public Task<IEnumerable<IEnumerable<string>>> GetRawInputs(DateTime fecha);
     }
 }

@@ -22,7 +22,7 @@ namespace MaxiLoterias.Core.Servicios
             return input.SplitBy("  ").Where(s => !string.IsNullOrWhiteSpace(s));
         }
 
-        public async Task<IEnumerable<T>> GetRaw<T>(DateTime fecha, Func<IGrouping<string, string>, T> func)
+        public async Task<IEnumerable<string>> GetRaw(DateTime fecha)
         {
             var config = Configuration.Default.WithDefaultLoader();
             var address = MakeUrl(DateToString(fecha));
@@ -30,23 +30,27 @@ namespace MaxiLoterias.Core.Servicios
             var document = await context.OpenAsync(address);
             var cellSelector = "td[valign|='upper']";
             var cells = document.QuerySelectorAll(cellSelector);
-            var titles = cells.Select(m => m.TextContent);
+            
+            return cells.Select(m => m.TextContent);
+        }
 
+        IEnumerable<T> GetRawGroups<T>(IEnumerable<string> content, Func<IGrouping<string, string>, T> func)
+        {
             //Cada tabla son grupos de 8
             var state = new StateInternal(8);
 
-            return titles.GroupBy(t => state.Letter())
-                         .Select(g => func(g));
+            return content.GroupBy(t => state.Letter())
+                          .Select(g => func(g));
         }
 
         public async Task<IEnumerable<IEnumerable<string>>> GetRawInputs(DateTime fecha)
         {
-            return await GetRaw(fecha, g => g.Select(s => s));
+            return GetRawGroups(await GetRaw(fecha), g => g.Select(s => s));
         }
 
         public async Task<LoteriaDTO> GoGet(DateTime fecha)
         {
-            var bloques = await GetRaw(fecha, g => new Bloque(g.Select(s => ParseInput(s))));
+            var bloques = GetRawGroups(await GetRaw(fecha), g => new Bloque(g.Select(s => ParseInput(s))));
 
             var dto = new LoteriaDTO()
             {
