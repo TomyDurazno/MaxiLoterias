@@ -8,9 +8,11 @@ namespace MaxiLoterias.Controllers
 {
     public class HomeController : Controller
     {
+        [HttpGet]
+        [Route("")]
         public IActionResult Index()
         {
-            return RedirectToAction("Hoy", "Loterias");
+            return View();
         }
     }
 }
