@@ -1,0 +1,26 @@
+[
+  {
+    "Nombre": "Loterias de hoy",
+    "Href": "https://maxiloterias.azurewebsites.net/loterias/hoy"
+  },
+  {
+    "Nombre": "Loterias de una fecha (22/05/2020)",
+    "Href": "https://maxiloterias.azurewebsites.net/loterias/fecha/2020-05-22"
+  },
+  {
+    "Nombre": "Loterias de una fecha (22/05/2020) con formateo",
+    "Href": "https://maxiloterias.azurewebsites.net/loterias/fecha/2020-05-22/pretty"
+  },
+  {
+    "Nombre": "Ultimas (11) loterias",
+    "Href": "https://maxiloterias.azurewebsites.net/loterias/ultimosdias/11"
+  },
+  {
+    "Nombre": "Ultimas (7) loterias hasta una fecha (29/04/2020)",
+    "Href": "https://maxiloterias.azurewebsites.net/loterias/ultimosdias/7/hasta/2020-04-29"
+  },
+  {
+    "Nombre": "Ultimas (7) loterias hasta una fecha (29/04/2020) con formateo",
+    "Href": "https://maxiloterias.azurewebsites.net/loterias/ultimosdias/7/hasta/2020-04-29/pretty"
+  }
+]

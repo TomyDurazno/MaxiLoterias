@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace MaxiLoterias.Core
 {
     public class StateInternal
     {
-        public static IEnumerable<string> Numbers()
+        public static IEnumerable<string> LetterGenerator()
         {
             int cont = 65;
             while (cont < 91)
@@ -27,7 +24,7 @@ namespace MaxiLoterias.Core
         {
             counter = 0;
             _top = top;
-            enumerator = Numbers().GetEnumerator();
+            enumerator = LetterGenerator().GetEnumerator();
             firstTime = true;
         }
 

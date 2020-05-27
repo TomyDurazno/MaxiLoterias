@@ -156,45 +156,33 @@ namespace MaxiLoterias.Core.Servicios
 
             return new Bloque()
             {
+                //Take(4) porque hay duplicación en los siguientes elementos
                 Loterias = _Lists.Take(4).Select(MakeLoteria).ToList()
             };
         }
 
         Loteria MakeLoteria(IEnumerable<string> rawValue)
         {
-            string makeNombre()
-            {
-                var fix = rawValue.ElementAt(0)?.FixS();
+            string makeNombre() => rawValue.ElementAt(0)?
+                                           .FixS()
+                                           .Pipe(key => Nombres.TryGetValue(key, out string value) ? value : key);
 
-                return Nombres.TryGetValue(fix, out string value) ? value : fix;
-            }
+            int cursor = 0;
 
-            string makeSubCodigo()
-            {
-                return rawValue.ElementAt(1)?.FixS();
-            }
+            string makeSubCodigo() => cursor != 1 ? rawValue.ElementAt(1)?.FixS() : null;
+
+            bool containsTopNumber(int n) => rawValue.ElementAt(n).Contains("1º");
 
             try
             {
-                int cursor = 0;
-                string _subCodigo = null;
-
-                if (rawValue.ElementAt(1).Contains("1º"))
-                {
+                if (containsTopNumber(1))
                     cursor = 1;
-                }
 
-                if (rawValue.ElementAt(2).Contains("1º"))
-                {
-                    _subCodigo = makeSubCodigo();
+                if (containsTopNumber(2))
                     cursor = 2;
-                }
 
-                if (rawValue.ElementAt(3).Contains("1º"))
-                {
-                    _subCodigo = makeSubCodigo();
+                if (containsTopNumber(3))
                     cursor = 3;
-                }
 
                 var state = new StateInternal(2);
                 var groups = rawValue.Skip(cursor).GroupBy(r => state.Letter());
@@ -203,14 +191,14 @@ namespace MaxiLoterias.Core.Servicios
 
                 if (numeros.All(n => n.HasValue()))
                 {
-                    return new Loteria(LoteriaState.Jugado, makeNombre(), _subCodigo)
+                    return new Loteria(LoteriaState.Jugado, makeNombre(), makeSubCodigo())
                     {
                         Numeros = numeros
                     };
                 }
                 else
                 {
-                    return new Loteria(LoteriaState.PendienteDeJuego, makeNombre(), _subCodigo);
+                    return new Loteria(LoteriaState.PendienteDeJuego, makeNombre(), makeSubCodigo());
                 }                
             }
             catch
