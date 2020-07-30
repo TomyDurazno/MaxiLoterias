@@ -99,6 +99,7 @@ namespace MaxiLoterias.Core.Servicios
         Bloque MakeBloque(IGrouping<string, string> g)
         {
             //Esta es la función que parsea el string del input, fijarse que hay casos en los que no está pudiendo parsear bien.  
+            //TO FIX: esta función es en general la responsable de que algo falle. Refactorizarla
             IEnumerable<string> ParseInput(string input)
             {
                 return input.SplitBy("\n").Where(s => !string.IsNullOrWhiteSpace(s));
