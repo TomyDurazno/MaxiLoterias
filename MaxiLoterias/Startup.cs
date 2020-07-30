@@ -34,11 +34,14 @@ namespace MaxiLoterias
                 //options.JsonSerializerOptions.WriteIndented = true;
                 options.JsonSerializerOptions.PropertyNamingPolicy = null;
                 options.JsonSerializerOptions.IgnoreNullValues = true;
+                options.JsonSerializerOptions.WriteIndented = true;
             });
 
             services.AddScoped<ITokenizerService<string>>(s => new TokenizerService());
 
             services.AddScoped<ILoteriaServicio>(s => new Ruta1000LoteriaServicio(s.GetService<ITokenizerService<string>>()));
+
+            services.AddScoped<IMultipleCondicionDeJuegoServicio>(services => new MultipleCondicionDeJuegoMatcher());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

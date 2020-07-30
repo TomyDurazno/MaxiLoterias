@@ -101,7 +101,7 @@ namespace MaxiLoterias.Core.Servicios
             //Esta es la función que parsea el string del input, fijarse que hay casos en los que no está pudiendo parsear bien.  
             IEnumerable<string> ParseInput(string input)
             {
-                return input.SplitBy("  ").Where(s => !string.IsNullOrWhiteSpace(s));
+                return input.SplitBy("\n").Where(s => !string.IsNullOrWhiteSpace(s));
             }
 
             var arr = g.Select(s => ParseInput(s)).ToArray().Select(rv => rv.ToList());
@@ -171,7 +171,7 @@ namespace MaxiLoterias.Core.Servicios
 
             string makeSubCodigo() => cursor != 1 ? rawValue.ElementAt(1)?.FixS() : null;
 
-            bool containsTopNumber(int n) => rawValue.ElementAt(n).Contains("1º");
+            bool containsTopNumber(int n) => rawValue.ElementAtOrDefault(n)?.Contains("1º") ?? false;
 
             try
             {

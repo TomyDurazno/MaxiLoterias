@@ -26,12 +26,16 @@ namespace MaxiLoterias.Core.Models
         public LoteriaState _Estado;
 
         public string Nombre { get => _Estado != LoteriaState.Error ? _Nombre : null; }
+
+        public string FullNombre { get => $"{Nombre}_{SubCodigo}"; }
         public string SubCodigo { get => _SubCodigo; }
 
         public string Estado
         {
             get => _Estado.GetDescription();
         }
+
+        public bool IsOk() => _Estado == LoteriaState.Jugado;
 
         public List<NumeroLoteria> Numeros { get; set; }
 

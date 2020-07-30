@@ -10,10 +10,12 @@ namespace MaxiLoterias.Controllers
     public class LoteriasController : Controller
     {
         ILoteriaServicio loteriaServicio;
+        IMultipleCondicionDeJuegoServicio multipleCondicionServicio;
 
-        public LoteriasController(ILoteriaServicio _loteriaServicio)
+        public LoteriasController(ILoteriaServicio _loteriaServicio, IMultipleCondicionDeJuegoServicio _multipleCondicionServicio)
         {
             loteriaServicio = _loteriaServicio;
+            multipleCondicionServicio = _multipleCondicionServicio;
         }
 
         [HttpGet]
@@ -39,6 +41,27 @@ namespace MaxiLoterias.Controllers
             var bloques = await loteriaServicio.GoGet(DateTime.Now);
 
             return Ok(ExecuteCommand(bloques, command));
+        }
+
+        [HttpGet]
+        [Route("loterias/hoy/juegos")]
+        public async Task<IActionResult> ByJuego()
+        {
+            var bloques = await loteriaServicio.GoGet(DateTime.Now);
+
+            var condiciones = new ICondicionDeJuego[] 
+            { 
+                new TieneCapicuas(), 
+                new Pares(), 
+                new NumerosRepetidos(), 
+                new TieneDosProximosIguales(), 
+                new TresIgualesUnoDistinto(),
+                new NumerosSeRepitenEnLasUltimasDos()
+            };
+
+            var result = bloques.Loterias.Select(l => new { Loteria = l.FullNombre, Results = multipleCondicionServicio.Matches(l, condiciones) } ).ToList();
+
+            return Ok(result);
         }
 
         [HttpGet]
