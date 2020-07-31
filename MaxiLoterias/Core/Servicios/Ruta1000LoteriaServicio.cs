@@ -65,10 +65,14 @@ namespace MaxiLoterias.Core.Servicios
         {
             var bloques = GetRawGroups(await GetRaw(fecha), MakeBloque);
 
+            var loterias = bloques.SelectMany(b => b.Loterias).ToList();
+
+            loterias.ForEach(l => l.Fecha = fecha);
+
             return new LoteriaResult()
             {
                 Fecha = fecha.ToShortDateString(),
-                Loterias = bloques.SelectMany(b => b.Loterias).ToList()
+                Loterias = loterias
             };         
         }
 

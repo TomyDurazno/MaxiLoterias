@@ -18,7 +18,7 @@ namespace MaxiLoterias.Core.Models
 
         public bool HasValue() => Numero.HasValue;
 
-        public int Name() => Puesto;
+        public int Position() => Puesto;
         public int Value() => Numero.Value;
 
         public string GetString() 
@@ -81,7 +81,7 @@ namespace MaxiLoterias.Core.Models
             JsonSerializerOptions options) {
 
             writer.WriteStartObject();            
-            writer.WritePropertyName(numLot.Name() + "º");
+            writer.WritePropertyName(numLot.Position() + "º");
             writer.WriteNumberValue(numLot.Value());
             writer.WriteEndObject();
         }

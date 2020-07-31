@@ -25,6 +25,8 @@ namespace MaxiLoterias.Core.Models
         public bool Construct;
         public LoteriaState _Estado;
 
+        public DateTime Fecha { get; set; }
+
         public string Nombre { get => _Estado != LoteriaState.Error ? _Nombre : null; }
 
         public string FullNombre { get => $"{Nombre}_{SubCodigo}"; }

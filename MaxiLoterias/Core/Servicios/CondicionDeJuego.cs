@@ -92,11 +92,9 @@ namespace MaxiLoterias.Core.Servicios
 
                 var reversed = numero.Value().ToString().Reverse();
 
-                var reversedNum = reversed.Pipe(c => string.Concat(c));
+                var reversedNum = reversed.Pipe(string.Concat, Convert.ToInt32);
 
-                var hasFour = reversed.ToArray().Count() == 4;
-
-                return value == Convert.ToInt32(reversedNum) && hasFour;
+                return reversed.Count() >= 3 && (value == reversedNum);
             }
 
             public CondicionDeJuegoResult Fits(Loteria loteria)
@@ -163,7 +161,7 @@ namespace MaxiLoterias.Core.Servicios
 
                 foreach (var numero in loteria.Numeros)
                 {
-                    if (numero.HasValue() && loteria.Numeros.Any(ln => ln.Name() != numero.Name() && numero.Value() == ln.Value()))
+                    if (numero.HasValue() && loteria.Numeros.Any(ln => ln.Position() != numero.Position() && numero.Value() == ln.Value()))
                         matches.Add(numero);
                 }
 
@@ -429,7 +427,7 @@ namespace MaxiLoterias.Core.Servicios
             }
         }
 
-        public class NumerodeLost : ICondicionDeJuego
+        public class NumeroDeLost : ICondicionDeJuego
         {
             public string Nombre => "Numero de Lost (4, 8, 15, 16, 23, 42)";
 
@@ -507,6 +505,101 @@ namespace MaxiLoterias.Core.Servicios
                 {
                     if (MatchesCriteria(num))
                         matches.Add(num);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Matches = matches,
+                    Condicion = Nombre
+                };
+            }
+        }
+
+        public class SaleElDiaDeJuego : ICondicionDeJuego
+        {
+            public string Nombre => "Sale El Dia De Juego";
+
+            string AsZeroEd(int n) => n > 10 ? n.ToString() : $"0{n}";
+
+            bool MatchesCriteria(NumeroLoteria num, DateTime date) 
+            {
+                return num.Value().ToString() == $"{date.Day.Pipe(AsZeroEd)}{date.Month.Pipe(AsZeroEd)}";
+            }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var num in loteria.Numeros)
+                {
+                    if (MatchesCriteria(num, loteria.Fecha))
+                        matches.Add(num);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Matches = matches,
+                    Condicion = Nombre
+                };
+            }
+        }
+
+        public class NumerosClones : ICondicionDeJuego
+        {
+            public string Nombre { get => "Numeros Clones"; }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var numero in loteria.Numeros)
+                {
+                    if (loteria.Numeros.Any(nl => nl.Position() != numero.Position() && nl.Value() == numero.Value())) 
+                        matches.Add(numero);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Matches = matches,
+                    Condicion = Nombre
+                };
+            }
+        }
+
+        public class EmpiezaYTerminaConPosición : ICondicionDeJuego
+        {
+            public string Nombre { get => "Empieza y termina con la posición"; }
+
+            bool Matches(NumeroLoteria numlot)
+            {
+                var arr = numlot.AsIntArray();
+
+                if (arr.Count() < 3)
+                    return false;
+
+                var first = arr.First();
+                var last = arr.Last();
+
+                return numlot.Position() == first && (first == last);
+            }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var numero in loteria.Numeros)
+                {
+                    if (Matches(numero))
+                        matches.Add(numero);
                 }
 
                 return new CondicionDeJuegoResult()
