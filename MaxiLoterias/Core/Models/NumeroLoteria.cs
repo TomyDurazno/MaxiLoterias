@@ -38,7 +38,7 @@ namespace MaxiLoterias.Core.Models
             return numLot;
         }
 
-        public NumeroLoteria()
+        NumeroLoteria()
         {
 
         }
@@ -52,7 +52,7 @@ namespace MaxiLoterias.Core.Models
 
         public NumeroLoteriaDTO ToDTO() => new NumeroLoteriaDTO(Puesto, Numero);
 
-        public int[] AsIntArray() => Value().ToString().ToCharArray().Select(c => Convert.ToInt32(c)).ToArray();
+        public int[] AsIntArray() => Value().AsIntArray();
     }
 
     public class NumeroLoteriaDTO

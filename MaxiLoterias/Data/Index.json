@@ -1,26 +1,34 @@
 [
   {
     "Nombre": "Loterias de hoy",
-    "Href": "https://maxiloterias.azurewebsites.net/loterias/hoy"
+    "Href": "loterias/hoy"
   },
   {
     "Nombre": "Loterias de una fecha (22/05/2020)",
-    "Href": "https://maxiloterias.azurewebsites.net/loterias/fecha/2020-05-22"
+    "Href": "loterias/fecha/2020-05-22"
   },
   {
     "Nombre": "Loterias de una fecha (22/05/2020) con formateo",
-    "Href": "https://maxiloterias.azurewebsites.net/loterias/fecha/2020-05-22/pretty"
+    "Href": "loterias/fecha/2020-05-22/pretty"
   },
   {
     "Nombre": "Ultimas (11) loterias",
-    "Href": "https://maxiloterias.azurewebsites.net/loterias/ultimosdias/11"
+    "Href": "loterias/ultimosdias/11"
   },
   {
     "Nombre": "Ultimas (7) loterias hasta una fecha (29/04/2020)",
-    "Href": "https://maxiloterias.azurewebsites.net/loterias/ultimosdias/7/hasta/2020-04-29"
+    "Href": "loterias/ultimosdias/7/hasta/2020-04-29"
   },
   {
     "Nombre": "Ultimas (7) loterias hasta una fecha (29/04/2020) con formateo",
-    "Href": "https://maxiloterias.azurewebsites.net/loterias/ultimosdias/7/hasta/2020-04-29/pretty"
+    "Href": "loterias/ultimosdias/7/hasta/2020-04-29/pretty"
+  },
+  {
+    "Nombre": "Condiciones de juego de hoy",
+    "Href": "loterias/juegos"
+  },
+  {
+    "Nombre": "Condiciones de juego de una fecha (29/07/2020)",
+    "Href": "loterias/juegos/2020-07-29"
   }
 ]

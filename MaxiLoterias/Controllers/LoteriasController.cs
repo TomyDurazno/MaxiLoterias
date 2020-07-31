@@ -21,11 +21,11 @@ namespace MaxiLoterias.Controllers
         [HttpGet]
         [Route("loterias/fecha/{fecha}/{command?}")]
         public async Task<IActionResult> PorFecha(string fecha, string command = null)
-        {            
-            if(DateTime.TryParse(fecha, out DateTime date))
+        {
+            if (DateTime.TryParse(fecha, out DateTime date))
             {
                 var bloques = await loteriaServicio.GoGet(date);
-                
+
                 return Ok(ExecuteCommand(bloques, command));
             }
             else
@@ -44,24 +44,25 @@ namespace MaxiLoterias.Controllers
         }
 
         [HttpGet]
-        [Route("loterias/hoy/juegos")]
-        public async Task<IActionResult> ByJuego()
+        [Route("loterias/juegos")]
+        [Route("loterias/juegos/{fecha}")]
+        public async Task<IActionResult> ByJuegoYFecha(string fecha)
         {
-            var bloques = await loteriaServicio.GoGet(DateTime.Now);
+            var date = DateTime.Now;
 
-            var condiciones = new ICondicionDeJuego[] 
-            { 
-                new TieneCapicuas(), 
-                new Pares(), 
-                new NumerosRepetidos(), 
-                new TieneDosProximosIguales(), 
-                new TresIgualesUnoDistinto(),
-                new NumerosSeRepitenEnLasUltimasDos()
-            };
+            if (fecha != null)
+            {
+                if(!DateTime.TryParse(fecha, out date)) // Mutation
+                {
+                    return NotFound("La fecha es errónea o no existen campos para la misma");
+                }
+            }
 
-            var result = bloques.Loterias.Select(l => new { Loteria = l.FullNombre, Results = multipleCondicionServicio.Matches(l, condiciones) } ).ToList();
+            var bloques = await loteriaServicio.GoGet(date);
 
-            return Ok(result);
+            var condiciones = Condiciones.DeJuego;
+
+            return Ok(new { Condiciones = condiciones.Select(c => c.Nombre), Resultados = multipleCondicionServicio.Matches(bloques, condiciones) });
         }
 
         [HttpGet]

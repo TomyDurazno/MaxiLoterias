@@ -4,7 +4,7 @@ using MaxiLoterias.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
 namespace MaxiLoterias.Core.Servicios
 {
@@ -12,28 +12,37 @@ namespace MaxiLoterias.Core.Servicios
 
     public interface ICondicionDeJuego
     {
-        public CondiciondeJuegoResult Fits(Loteria loteria);
+        public CondicionDeJuegoResult Fits(Loteria loteria);
 
         public string Nombre { get; }
     }
 
-    public class CondiciondeJuegoResult
+    public class CondicionDeJuegoResult
     {
         public string Condicion { get; set; }
+        
         public List<NumeroLoteria> Matches { get; set; }
         public bool HasValue() => Matches.Any();
     }
 
-    public interface IMultipleCondicionDeJuegoServicio
+    public class MultipleCondicionResult
     {
-        public List<CondiciondeJuegoResult> Matches(Loteria loteria, params ICondicionDeJuego[] condiciones);
+        public string Nombre { get; set; }
+        public List<CondicionDeJuegoResult> Condiciones { get; set; }
     }
 
-    public class MultipleCondicionDeJuegoMatcher : IMultipleCondicionDeJuegoServicio
+    public interface IMultipleCondicionDeJuegoServicio
     {
-        public List<CondiciondeJuegoResult> Matches(Loteria loteria, params ICondicionDeJuego[] condiciones)
+        public MultipleCondicionResult Matches(Loteria loteria, params ICondicionDeJuego[] condiciones);
+
+        public List<MultipleCondicionResult> Matches(LoteriaResult loterias, params ICondicionDeJuego[] condiciones);
+    }
+
+    public class MultipleCondicionDeJuegoMatcherServicio : IMultipleCondicionDeJuegoServicio
+    {
+        public MultipleCondicionResult Matches(Loteria loteria, params ICondicionDeJuego[] condiciones)
         {
-            var matches = new List<CondiciondeJuegoResult>();
+            var matches = new List<CondicionDeJuegoResult>();
 
             foreach (var condition in condiciones)
             {
@@ -43,221 +52,471 @@ namespace MaxiLoterias.Core.Servicios
                     matches.Add(result);
                 }
             }
-            
+
+            var multiple = new MultipleCondicionResult();
+
+            multiple.Nombre = loteria.Nombre;
+            multiple.Condiciones = matches;
+
+            return multiple;
+        }
+
+        public List<MultipleCondicionResult> Matches(LoteriaResult result, params ICondicionDeJuego[] condiciones)
+        {
+            var matches = new List<MultipleCondicionResult>();
+
+            foreach (var loteria in result.Loterias)
+            {
+                matches.Add(Matches(loteria, condiciones));
+            }            
+
             return matches;
         }
     }
 
     #endregion
 
-    #region Condiciones
+    #region Condiciones De Juego
 
-    public class TieneCapicuas : ICondicionDeJuego
+    public class Condiciones
     {
-        public string Nombre { get => "Tiene Capicúas";  }
+        public static ICondicionDeJuego [] DeJuego => typeof(Condiciones).GetNestedTypes().Select(t => (ICondicionDeJuego)Activator.CreateInstance(t)).ToArray();
 
-        public bool Condition(NumeroLoteria numero)
+        public class Capicuas : ICondicionDeJuego
         {
-            var value = numero.Value();
+            public string Nombre { get => "Capicúas"; }
 
-            var reversed = numero.Value().ToString().Reverse();
+            public bool Condition(NumeroLoteria numero)
+            {
+                var value = numero.Value();
 
-            var reversedNum = reversed.Pipe(c => string.Concat(c));
+                var reversed = numero.Value().ToString().Reverse();
 
-            var hasFour = reversed.ToArray().Count() == 4;
+                var reversedNum = reversed.Pipe(c => string.Concat(c));
 
-            return value == Convert.ToInt32(reversedNum) && hasFour;
+                var hasFour = reversed.ToArray().Count() == 4;
+
+                return value == Convert.ToInt32(reversedNum) && hasFour;
+            }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var numero in loteria.Numeros)
+                {
+                    if (numero.HasValue() && Condition(numero))
+                        matches.Add(numero);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Condicion = Nombre,
+                    Matches = matches
+                };
+            }
         }
 
-        public CondiciondeJuegoResult Fits(Loteria loteria)
+        public class Pares : ICondicionDeJuego
         {
-            if (!loteria.IsOk())
+            public string Nombre { get => "Pares"; }
+
+            public bool Condition(NumeroLoteria numero)
+            {
+                return numero.Value() % 2 == 0;
+            }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var numero in loteria.Numeros)
+                {
+                    if (numero.HasValue() && Condition(numero))
+                        matches.Add(numero);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Condicion = Nombre,
+                    Matches = matches
+                };
+            }
+        }
+
+        public class NumerosRepetidos : ICondicionDeJuego
+        {
+            public string Nombre { get => "Números Repetidos"; }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var numero in loteria.Numeros)
+                {
+                    if (numero.HasValue() && loteria.Numeros.Any(ln => ln.Name() != numero.Name() && numero.Value() == ln.Value()))
+                        matches.Add(numero);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Condicion = Nombre,
+                    Matches = matches,
+                };
+            }
+        }
+
+        public class DosProximosIguales : ICondicionDeJuego
+        {
+            public string Nombre { get => "Dos Números Próximos Iguales"; }
+
+            bool Criteria(NumeroLoteria numero)
+            {
+                var arr = numero.Value().ToString().ToCharArray().Select(c => Convert.ToInt32(c)).ToArray();
+
+                var adjacentDuplicate = arr.Skip(1).Where((value, index) => value == arr[index]).Distinct();
+
+                return adjacentDuplicate.Any();
+            }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var numero in loteria.Numeros)
+                {
+                    if (numero.HasValue() && Criteria(numero))
+                        matches.Add(numero);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Condicion = Nombre,
+                    Matches = matches
+                };
+            }
+        }
+
+        public class TresIgualesUnoDistinto : ICondicionDeJuego
+        {
+            public string Nombre { get => "Tres Iguales Uno Distinto"; }
+
+            bool Criteria(NumeroLoteria numero) => numero.AsIntArray()
+                                                         .GroupBy(r => r)
+                                                         .Any(g => g.ToList().Count() == 3);
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var numero in loteria.Numeros)
+                {
+                    if (numero.HasValue() && Criteria(numero))
+                        matches.Add(numero);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Condicion = Nombre,
+                    Matches = matches
+                };
+            }
+        }
+
+        public class NumerosSeRepitenEnLasUltimasDos : ICondicionDeJuego
+        {
+            public string Nombre { get => "Números Se Repiten En Las Ultimas Dos"; }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var has20 = loteria.Numeros.Count() == 20;
+
+                if (!has20)
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                var reversed = loteria.Numeros.AsEnumerable().Reverse();
+
+                var last = reversed.Take(1).FirstOrDefault();
+
+                var ante = reversed.Skip(1).Take(1).FirstOrDefault();
+
+                var anteAsIntArray = ante.AsIntArray();
+
+                foreach (var inLast in last.AsIntArray())
+                {
+                    if (anteAsIntArray.Any(n => n == inLast))
+                    {
+                        return new CondicionDeJuegoResult()
+                        {
+                            Condicion = Nombre,
+                            Matches = matches
+                        };
+                    }
+                }
+
                 return null;
-
-            var matches = new List<NumeroLoteria>();
-
-            foreach (var numero in loteria.Numeros)
-            {
-                if (numero.HasValue() && Condition(numero))
-                    matches.Add(numero);
             }
-
-            return new CondiciondeJuegoResult()
-            {
-                Condicion = Nombre,
-                Matches = matches
-            };
-        }
-    }
-
-    public class Pares : ICondicionDeJuego
-    {
-        public string Nombre { get => "Pares";  }
-
-        public bool Condition(NumeroLoteria numero)
-        {
-            return numero.Value() % 2 == 0;
         }
 
-        public CondiciondeJuegoResult Fits(Loteria loteria)
+        public class EsNumeroPrimo : ICondicionDeJuego
         {
-            if (!loteria.IsOk())
-                return null;
+            public string Nombre { get => "Es Número Primo"; }
 
-            var matches = new List<NumeroLoteria>();
-
-            foreach (var numero in loteria.Numeros)
+            public CondicionDeJuegoResult Fits(Loteria loteria)
             {
-                if (numero.HasValue() && Condition(numero))
-                    matches.Add(numero);
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var numero in loteria.Numeros)
+                {
+                    if (numero.HasValue() && numero.Value().IsPrime())
+                        matches.Add(numero);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Matches = matches,
+                    Condicion = Nombre
+                };
             }
-
-            return new CondiciondeJuegoResult()
-            {
-                Condicion = Nombre,
-                Matches = matches
-            };
         }
-    }
 
-    public class NumerosRepetidos : ICondicionDeJuego
-    {
-        public string Nombre { get => "Numeros Repetidos"; }
-
-        public CondiciondeJuegoResult Fits(Loteria loteria)
+        public class RepetidosEnFila : ICondicionDeJuego
         {
-            if (!loteria.IsOk())
-                return null;
+            public string Nombre => "Repetidos en Fila";
 
-            var matches = new List<NumeroLoteria>();
-
-            foreach (var numero in loteria.Numeros)
+            bool MatchesCriteria(NumeroLoteria first, NumeroLoteria last)
             {
-                if (numero.HasValue() && loteria.Numeros.Any(ln => ln.Name() != numero.Name() && numero.Value() == ln.Value()))
-                    matches.Add(numero);
-            }
+                var firstArr = first.AsIntArray();
+                var secondArr = last.AsIntArray();
 
-            return new CondiciondeJuegoResult()
-            {
-                Condicion = Nombre,
-                Matches = matches,
-            };
-        }
-    }
+                foreach (var i in Enumerable.Range(0, 4))
+                {
+                    if ((secondArr.ElementAtOrDefault(i) != default && firstArr.ElementAtOrDefault(i) != default) &&
+                        (secondArr.ElementAtOrDefault(i) == firstArr.ElementAtOrDefault(i)))
+                        return true;
+                }
 
-    public class TieneDosProximosIguales : ICondicionDeJuego
-    {
-        public string Nombre { get => "TieneDosProximosIguales"; }
-
-        bool Criteria(NumeroLoteria numero)
-        {
-            var arr = numero.Value().ToString().ToCharArray().Select(c => Convert.ToInt32(c)).ToArray();
-
-            var adjacentDuplicate = arr.Skip(1).Where((value, index) => value == arr[index]).Distinct();
-
-            if (adjacentDuplicate.Any())
-            {
-                return true;
-            }
-            else
-            {
                 return false;
             }
-        }
 
-        public CondiciondeJuegoResult Fits(Loteria loteria)
-        {
-            if (!loteria.IsOk())
-                return null;
-
-            var matches = new List<NumeroLoteria>();
-
-            foreach (var numero in loteria.Numeros)
+            public CondicionDeJuegoResult Fits(Loteria loteria)
             {
-                if (numero.HasValue() && Criteria(numero))
-                    matches.Add(numero);
-            }
+                if (!loteria.IsOk())
+                    return null;
 
-            return new CondiciondeJuegoResult()
-            {
-                Condicion = Nombre,
-                Matches = matches
-            };
-        }
-    }
+                var matches = new List<NumeroLoteria>();
 
-    public class TresIgualesUnoDistinto : ICondicionDeJuego
-    {
-        public string Nombre { get => "TresIgualesUnoDistinto"; }
+                var nums = loteria.Numeros.Select((l, i) => new { l, i }).ToArray();
 
-        bool Criteria(NumeroLoteria numero)
-        {
-            var arr = numero.Value().ToString().ToCharArray().Select(c => Convert.ToInt32(c)).ToArray();
-
-            return arr.GroupBy(r => r).Any(g => g.ToList().Count() == 3);
-        }
-
-        public CondiciondeJuegoResult Fits(Loteria loteria)
-        {
-            if (!loteria.IsOk())
-                return null;
-
-            var matches = new List<NumeroLoteria>();
-
-            foreach (var numero in loteria.Numeros)
-            {
-                if (numero.HasValue() && Criteria(numero))
-                    matches.Add(numero);
-            }
-
-            return new CondiciondeJuegoResult()
-            {
-                Condicion = Nombre,
-                Matches = matches
-            };
-        }
-    }
-
-    public class NumerosSeRepitenEnLasUltimasDos : ICondicionDeJuego
-    {
-        public string Nombre { get => "NumerosSeRepitenEnLasUltimasDos"; }
-
-        public CondiciondeJuegoResult Fits(Loteria loteria)
-        {
-            if (!loteria.IsOk())
-                return null;
-
-            var has20 = loteria.Numeros.Count() == 20;
-
-            if (!has20)
-                return null;
-
-            var matches = new List<NumeroLoteria>();
-
-            var reversed = loteria.Numeros.AsEnumerable().Reverse();
-
-            var last = reversed.Take(1).FirstOrDefault();
-
-            var ante = reversed.Skip(1).Take(1).FirstOrDefault();
-
-            var anteAsIntArray = ante.AsIntArray();
-
-            foreach (var inLast in last.AsIntArray())
-            {
-                if(anteAsIntArray.Any(n => n == inLast))
+                foreach (var num in nums)
                 {
-                    return new CondiciondeJuegoResult()
+                    if(num.i != 0)
                     {
-                        Condicion = Nombre,
-                        Matches = matches
-                    };
+                        var first = nums[num.i - 1];
+
+                        if (MatchesCriteria(first.l, num.l))
+                            matches.AddRange(new[] { first.l, num.l });
+                    }
                 }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Matches = matches,
+                    Condicion = Nombre
+                };
+            }
+        }
+
+        public class TodosLosNúmerosPares : ICondicionDeJuego
+        {
+            public string Nombre { get => "Todos Los Números Pares"; }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var numero in loteria.Numeros)
+                {
+                    if (numero.HasValue() && numero.AsIntArray().All(n => n % 2 == 0))
+                        matches.Add(numero);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Matches = matches,
+                    Condicion = Nombre
+                };
+            }
+        }
+
+        public class Escalera : ICondicionDeJuego
+        {
+            public string Nombre => "Escalera";
+
+            bool Ordered(int[] arr, Func<int, int, bool> predicate)
+            {
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    if (i != 0)
+                        if (!predicate(arr[i - 1], arr[i]))
+                            return false;
+                }
+                return true;
             }
 
-            return null;
+            bool MatchesCriteria(NumeroLoteria num)
+            {                
+                var ordered = num.AsIntArray();
+
+                if (ordered.Count() < 3)
+                    return false;
+
+                var reversed = num.AsIntArray().Reverse().ToArray();
+
+                if (Ordered(ordered, (f, s) => (f - 1) == s))
+                    return true;
+
+                if (Ordered(reversed, (f, s) => (f + 1) == s))
+                    return true;
+
+                return false;
+            }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var num in loteria.Numeros)
+                {
+                    if (MatchesCriteria(num))
+                        matches.Add(num);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Matches = matches,
+                    Condicion = Nombre
+                };
+            }
+        }
+
+        public class NumerodeLost : ICondicionDeJuego
+        {
+            public string Nombre => "Numero de Lost (4, 8, 15, 16, 23, 42)";
+
+            bool Ordered(int[] arr, Func<int, int, bool> predicate)
+            {
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    if (i != 0)
+                        if (predicate(arr[i - 1], arr[i]))
+                            return true;
+                }
+                return false;
+            }
+
+            bool IsNumber(int[] arr, Func<int, bool> predicate)
+            {
+                for (int i = 0; i < arr.Length; i++)
+                {
+                        if (predicate(arr[i]))
+                            return true;
+                }
+                return false;
+            }
+
+            bool MatchesCriteria(NumeroLoteria num)
+            {
+                var nums = new [] { 4, 8, 15, 16, 23, 42};
+
+                var ordered = num.AsIntArray();
+
+                if (Ordered(ordered, (f, s) => $"{f}{s}".Pipe(Convert.ToInt32, n => nums.Any(n1 => n1 == n))))
+                    return true;
+
+                if (IsNumber(ordered, n => nums.Any(n1 => n1 == n)))
+                    return true;
+
+                return false;
+            }
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var num in loteria.Numeros)
+                {
+                    if (MatchesCriteria(num))
+                        matches.Add(num);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Matches = matches,
+                    Condicion = Nombre
+                };
+            }
+        }
+
+        public class CifrasSumanTrece : ICondicionDeJuego
+        {
+            public string Nombre => "Cifras Suman Trece";
+
+            bool MatchesCriteria(NumeroLoteria num) => num.AsIntArray().Sum() == 13;
+
+            public CondicionDeJuegoResult Fits(Loteria loteria)
+            {
+                if (!loteria.IsOk())
+                    return null;
+
+                var matches = new List<NumeroLoteria>();
+
+                foreach (var num in loteria.Numeros)
+                {
+                    if (MatchesCriteria(num))
+                        matches.Add(num);
+                }
+
+                return new CondicionDeJuegoResult()
+                {
+                    Matches = matches,
+                    Condicion = Nombre
+                };
+            }
         }
     }
-
 
     #endregion
 }

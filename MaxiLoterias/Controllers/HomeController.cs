@@ -21,10 +21,10 @@ namespace MaxiLoterias.Controllers
         public IActionResult Index()
         {
             string contentRootPath = _hostingEnvironment.ContentRootPath;
-            
+
             var JSON = System.IO.File.ReadAllText(contentRootPath + "/Data/Index.json");
 
-            var model = JToken.Parse(JSON).ToObject<List<IndexViewModel>>();
+            var model = JToken.Parse(JSON).ToObject<List<IndexViewModel>>();            
 
             return View(model);
         }

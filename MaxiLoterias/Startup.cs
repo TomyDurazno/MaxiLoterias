@@ -41,7 +41,7 @@ namespace MaxiLoterias
 
             services.AddScoped<ILoteriaServicio>(s => new Ruta1000LoteriaServicio(s.GetService<ITokenizerService<string>>()));
 
-            services.AddScoped<IMultipleCondicionDeJuegoServicio>(services => new MultipleCondicionDeJuegoMatcher());
+            services.AddScoped<IMultipleCondicionDeJuegoServicio>(services => new MultipleCondicionDeJuegoMatcherServicio());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

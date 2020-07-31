@@ -151,7 +151,7 @@ namespace MaxiLoterias.Core.Extensions
             => s.Replace("\r\n", "\n")
                 .Replace('\r', '\n')
                 .Replace("\n", "  ")
-                .Trim();
+                .Trim();        
 
         public static string AddZeroFront(this int n)
         {
@@ -181,5 +181,20 @@ namespace MaxiLoterias.Core.Extensions
             }
             return null;
         }
+    }
+
+    public static class IntegerExtensions
+    {
+        #region Is Prime
+
+        public static bool IsPrime(this int n)
+            => n > 1 ? Enumerable.Range(1, n)
+                                 .Where(x => n % x == 0)
+                                 .SequenceEqual(new[] { 1, n })
+                     : false;
+
+        #endregion
+
+        public static int[] AsIntArray(this int n) => n.ToString().ToCharArray().Select(c => Convert.ToInt32(Convert.ToString(c))).ToArray();
     }
 }
