@@ -1,6 +1,8 @@
 ﻿using AngleSharp;
 using MaxiLoterias.Core.Extensions;
 using MaxiLoterias.Core.Models;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,14 +15,15 @@ namespace MaxiLoterias.Core.Servicios
         #region Fields
 
         ITokenizerService<string> tokenizerService;
+        ILogger<Ruta1000LoteriaServicio> logger;
 
         #endregion
 
         #region Constructor
 
-        public Ruta1000LoteriaServicio(ITokenizerService<string> _tokenizerService)
+        public Ruta1000LoteriaServicio(ILogger<Ruta1000LoteriaServicio> _logger)
         {
-            tokenizerService = _tokenizerService;
+            logger = _logger;
         }
 
         #endregion
@@ -29,7 +32,7 @@ namespace MaxiLoterias.Core.Servicios
 
         string MakeUrl (string dateAsString) => $"https://m.ruta1000.com.ar/index2008.php?FechaAlMinuto={dateAsString}#Sorteos";
 
-        string DateToString(DateTime f) => $"{f.Year}_{f.Month.AddZeroFront()}_{f.Day.AddZeroFront()}";
+        string DateToString(DateTime f) => $"{f.Year}_{f.Month.AddZeroFront()}_{f.Day.AddZeroFront()}";        
 
         Dictionary<string, string> Nombres = new Dictionary<string, string>()
         {
@@ -55,11 +58,17 @@ namespace MaxiLoterias.Core.Servicios
             { "QUINIELAENTRE RIOSNOCTURNA", "QUINIELA ENTRE RIOS NOCTURNA" },
             { "QUINIELAMONTEVIDEOMATUTINA", "QUINIELA MONTEVIDEO MATUTINA" },
             { "QUINIELAMONTEVIDEONOCTURNA", "QUINIELA MONTEVIDEO NOCTURNA" },
+            {"QUINIELACORRIENTESMATUTINA", "QUINIELA CORRIENTES MATUTINA" },
+            {"QUINIELACORRIENTESVESPERTINA", "QUINIELA CORRIENTES VESPERTINA" },
+            {"QUINIELACORRIENTESNOCTURNA", "QUINIELA CORRIENTES NOCTURNA" },
+            {"QUINIELACORRIENTESPRIMERA" , "QUINIELA CORRIENTES PRIMERA" }
         };
 
         #endregion
 
         #region Interface Implementation
+
+        public string RutaHoy => MakeUrl(DateToString(DateTime.Now));
 
         public async Task<LoteriaResult> GoGet(DateTime fecha)
         {
@@ -74,8 +83,7 @@ namespace MaxiLoterias.Core.Servicios
                 Fecha = fecha.ToShortDateString(),
                 Loterias = loterias
             };         
-        }
-
+        }        
         #endregion
 
         #region Private Methods
@@ -100,19 +108,23 @@ namespace MaxiLoterias.Core.Servicios
                           .Select(g => func(g));
         }
 
+        //Esta es la función que parsea el string del input, fijarse que hay casos en los que no está pudiendo parsear bien.  
+        //TO FIX: esta función es en general la responsable de que algo falle. Refactorizarla
+        IEnumerable<string> ParseInput(string input)
+        {
+            return input.SplitBy("\n").Where(s => !string.IsNullOrWhiteSpace(s));
+        }
+
         Bloque MakeBloque(IGrouping<string, string> g)
         {
-            //Esta es la función que parsea el string del input, fijarse que hay casos en los que no está pudiendo parsear bien.  
-            //TO FIX: esta función es en general la responsable de que algo falle. Refactorizarla
-            IEnumerable<string> ParseInput(string input)
-            {
-                return input.SplitBy("\n").Where(s => !string.IsNullOrWhiteSpace(s));
-            }
+            logger.Log(LogLevel.Information, $"Before Make Bloque: {JsonConvert.SerializeObject(g)}");
 
             var arr = g.Select(s => ParseInput(s)).ToArray().Select(rv => rv.ToList());
 
+            logger.Log(LogLevel.Information, $"After Parse Input: {JsonConvert.SerializeObject(arr)}");
+
             int count = 0;
-            var _Lists = new List<List<string>>();
+            var lists = new List<List<string>>();
 
             foreach (var element in arr)
             {
@@ -123,7 +135,7 @@ namespace MaxiLoterias.Core.Servicios
                     if (r != null)
                         element.AddRange(r);
 
-                    _Lists.Add(element);
+                    lists.Add(element);
                 }
 
                 if (count == 1)
@@ -133,7 +145,7 @@ namespace MaxiLoterias.Core.Servicios
                     if (r != null)
                         element.AddRange(r);
 
-                    _Lists.Add(element);
+                    lists.Add(element);
                 }
 
                 if (count == 2)
@@ -143,7 +155,7 @@ namespace MaxiLoterias.Core.Servicios
                     if (r != null)
                         element.AddRange(r);
 
-                    _Lists.Add(element);
+                    lists.Add(element);
                 }
 
                 if (count == 3)
@@ -153,17 +165,21 @@ namespace MaxiLoterias.Core.Servicios
                     if (r != null)
                         element.AddRange(r);
 
-                    _Lists.Add(element);
+                    lists.Add(element);
                 }
 
                 count++;
             }
 
-            return new Bloque()
+            var bloque = new Bloque()
             {
                 //Take(4) porque hay duplicación en los siguientes elementos
-                Loterias = _Lists.Take(4).Select(MakeLoteria).ToList()
+                Loterias = lists.Take(4).Select(MakeLoteria).ToList()
             };
+
+            logger.Log(LogLevel.Information, $"After Make Bloque: { JsonConvert.SerializeObject(bloque) }");
+
+            return bloque;
         }
 
         Loteria MakeLoteria(IEnumerable<string> rawValue)

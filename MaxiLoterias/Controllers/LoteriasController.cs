@@ -9,14 +9,24 @@ namespace MaxiLoterias.Controllers
 {
     public class LoteriasController : Controller
     {
+        #region Fields
+
         ILoteriaServicio loteriaServicio;
         IMultipleCondicionDeJuegoServicio multipleCondicionServicio;
+
+        #endregion
+
+        #region Constructor
 
         public LoteriasController(ILoteriaServicio _loteriaServicio, IMultipleCondicionDeJuegoServicio _multipleCondicionServicio)
         {
             loteriaServicio = _loteriaServicio;
             multipleCondicionServicio = _multipleCondicionServicio;
         }
+
+        #endregion
+
+        #region Endpoints
 
         [HttpGet]
         [Route("loterias/fecha/{fecha}/{command?}")]
@@ -44,25 +54,21 @@ namespace MaxiLoterias.Controllers
         }
 
         [HttpGet]
-        [Route("loterias/juegos")]
+        [Route("loterias/juegos/")]
         [Route("loterias/juegos/{fecha}")]
         public async Task<IActionResult> ByJuegoYFecha(string fecha)
         {
             var date = DateTime.Now;
 
             if (fecha != null)
-            {
                 if(!DateTime.TryParse(fecha, out date)) // Mutation
-                {
-                    return NotFound("La fecha es errónea o no existen campos para la misma");
-                }
-            }
+                    return NotFound("La fecha es errónea o no existen campos para la misma");              
 
-            var bloques = await loteriaServicio.GoGet(date);
+            var bloques = await loteriaServicio.GoGet(date);            
 
-            var condiciones = Condiciones.DeJuego;
+            var result = multipleCondicionServicio.Matches(bloques, Condiciones.DeJuego);
 
-            return Ok(new { Condiciones = condiciones.Select(c => c.Nombre), Resultados = multipleCondicionServicio.Matches(bloques, condiciones) });
+            return Ok(result);
         }
 
         [HttpGet]
@@ -89,6 +95,8 @@ namespace MaxiLoterias.Controllers
                 return NotFound("Dia no especificado");
             }
         }
+
+        #endregion
 
         #region ExecuteCommand
 

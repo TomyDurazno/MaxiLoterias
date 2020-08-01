@@ -1,10 +1,8 @@
-﻿using AngleSharp.Common;
-using MaxiLoterias.Core.Extensions;
+﻿using MaxiLoterias.Core.Extensions;
 using MaxiLoterias.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace MaxiLoterias.Core.Servicios
 {
@@ -19,8 +17,7 @@ namespace MaxiLoterias.Core.Servicios
 
     public class CondicionDeJuegoResult
     {
-        public string Condicion { get; set; }
-        
+        public string Condicion { get; set; }        
         public List<NumeroLoteria> Matches { get; set; }
         public bool HasValue() => Matches.Any();
     }
@@ -31,11 +28,17 @@ namespace MaxiLoterias.Core.Servicios
         public List<CondicionDeJuegoResult> Condiciones { get; set; }
     }
 
+    public class JuegosResult
+    {
+        public List<string> Condiciones { get; set; }
+        public List<MultipleCondicionResult> Resultados { get; set; }
+    }
+
     public interface IMultipleCondicionDeJuegoServicio
     {
         public MultipleCondicionResult Matches(Loteria loteria, params ICondicionDeJuego[] condiciones);
 
-        public List<MultipleCondicionResult> Matches(LoteriaResult loterias, params ICondicionDeJuego[] condiciones);
+        public JuegosResult Matches(LoteriaResult loterias, params ICondicionDeJuego[] condiciones);
     }
 
     public class MultipleCondicionDeJuegoMatcherServicio : IMultipleCondicionDeJuegoServicio
@@ -61,16 +64,20 @@ namespace MaxiLoterias.Core.Servicios
             return multiple;
         }
 
-        public List<MultipleCondicionResult> Matches(LoteriaResult result, params ICondicionDeJuego[] condiciones)
+        public JuegosResult Matches(LoteriaResult result, params ICondicionDeJuego[] condiciones)
         {
             var matches = new List<MultipleCondicionResult>();
 
             foreach (var loteria in result.Loterias)
             {
                 matches.Add(Matches(loteria, condiciones));
-            }            
+            }
 
-            return matches;
+            return new JuegosResult
+            {
+                Condiciones = condiciones.Select(m => m.Nombre).ToList(),
+                Resultados = matches
+            };
         }
     }
 
@@ -80,7 +87,7 @@ namespace MaxiLoterias.Core.Servicios
 
     public class Condiciones
     {
-        public static ICondicionDeJuego [] DeJuego => typeof(Condiciones).GetNestedTypes().Select(t => (ICondicionDeJuego)Activator.CreateInstance(t)).ToArray();
+        public static ICondicionDeJuego[] DeJuego => typeof(Condiciones).GetNestedTypes().Select(t => (ICondicionDeJuego)Activator.CreateInstance(t)).ToArray();
 
         public class Capicuas : ICondicionDeJuego
         {

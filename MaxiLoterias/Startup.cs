@@ -31,7 +31,6 @@ namespace MaxiLoterias
 
             services.AddControllers().AddJsonOptions(options =>
             {
-                //options.JsonSerializerOptions.WriteIndented = true;
                 options.JsonSerializerOptions.PropertyNamingPolicy = null;
                 options.JsonSerializerOptions.IgnoreNullValues = true;
                 options.JsonSerializerOptions.WriteIndented = true;
@@ -39,14 +38,16 @@ namespace MaxiLoterias
 
             services.AddScoped<ITokenizerService<string>>(s => new TokenizerService());
 
-            services.AddScoped<ILoteriaServicio>(s => new Ruta1000LoteriaServicio(s.GetService<ITokenizerService<string>>()));
+            services.AddScoped<ILoteriaServicio>(s => new Ruta1000LoteriaServicio(s.GetService<ILogger<Ruta1000LoteriaServicio>>()));
 
             services.AddScoped<IMultipleCondicionDeJuegoServicio>(services => new MultipleCondicionDeJuegoMatcherServicio());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
         {
+            loggerFactory.AddFile("Logs/myapp-{Date}.txt");
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

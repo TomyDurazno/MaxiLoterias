@@ -1,7 +1,7 @@
-﻿using MaxiLoterias.ViewModels;
+﻿using MaxiLoterias.Core.Servicios;
+using MaxiLoterias.ViewModels;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 
@@ -9,12 +9,24 @@ namespace MaxiLoterias.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly IWebHostEnvironment _hostingEnvironment;
+        #region Fields
 
-        public HomeController(IWebHostEnvironment hostingEnvironment)
+        IWebHostEnvironment _hostingEnvironment;
+        ILoteriaServicio _loteriaServicio;
+
+        #endregion
+
+        #region Constructor
+
+        public HomeController(IWebHostEnvironment hostingEnvironment, ILoteriaServicio loteriaServicio)
         {
             _hostingEnvironment = hostingEnvironment;
+            _loteriaServicio = loteriaServicio;
         }
+
+        #endregion
+
+        #region Endpoints
 
         [HttpGet]
         [Route("")]
@@ -22,11 +34,15 @@ namespace MaxiLoterias.Controllers
         {
             string contentRootPath = _hostingEnvironment.ContentRootPath;
 
-            var JSON = System.IO.File.ReadAllText(contentRootPath + "/Data/Index.json");
+            var JSON = System.IO.File.ReadAllText($"{contentRootPath}/Data/Index.json");
 
-            var model = JToken.Parse(JSON).ToObject<List<IndexViewModel>>();            
+            var model = JToken.Parse(JSON).ToObject<List<IndexViewModel>>();
+
+            ViewBag.RutaHoy = _loteriaServicio.RutaHoy;
 
             return View(model);
         }
+
+        #endregion
     }
 }
